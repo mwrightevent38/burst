@@ -14,6 +14,7 @@ int numSessions;
 int splitSize;
 int removeReturn;
 int threadnum;
+int commaSplit;
 int low;
 int high;
 char filename;
@@ -22,6 +23,26 @@ int chars;
 int lines;
 threadData tData;
 
+//makes a comma seperated line file
+char *seperateoncomma(const char *s)
+{
+	 char comma[] = ",";
+
+char *p = malloc(strlen(s) + 1);
+	if (p){
+	char *p2 = p;
+	while (*s !='\0'){
+		if(*s != '\t' && *s != '\n')
+		{
+			*p2++ = *s++;
+		}
+		else{ *p2 = *comma; *p2++;  s++;}
+			}
+	*p2 ='\0';
+		}
+	return p;
+}
+//will remove all line endings
 char *strip_char(const char *s){
 	char *p = malloc(strlen(s) + 1);
 	if (p){
@@ -30,13 +51,13 @@ char *strip_char(const char *s){
 			if(*s != '\t' && *s != '\n'){
 			*p2++ = *s++;
 			}
-			else{    s++;	}
+			else{  s++;	}
 		}
 	*p2 = '\0';
 	}
 return p;
 }
-
+//counts the number of lines and characters in a file
 int countLines(char *argv[], int low, int high){
 	FILE *fp = fopen(argv[1],"r");
 	int ch;
@@ -60,7 +81,7 @@ return chars;
 
 }
 
-
+//calcs the max number of iterations based on split size
 void numberSessions(int Lines, int split){
 int t = (int)((lines/split)+1);
 tData.numSessions = t;
@@ -68,20 +89,17 @@ tData.numSessions = t;
 }
 
 
-
+// function run on thread to burst file into new files
 void *burst(void *argv[]){
 int fd;
 char c[100];
 sprintf(c,argv[1]);
-printf("%d\n",tData.threadnum);	
-
-sprintf(c,"%d",tData.threadnum);	
-
+sprintf(c, "%d",tData.threadnum);
 	fd = open(argv[1], O_RDONLY);
 
 int size = tData.high - tData.low;
- 
-//printf("%d\n",size);
+
+
 
 char buf[size];
 
@@ -105,12 +123,15 @@ printf("failed");
 if (tData.removeReturn == 1){
 write(fd,strip_char(buf),size-tData.splitSize);
 }
+else if(tData.commaSplit == 1){
+write(fd,seperateoncomma(buf),size-tData.splitSize);
+}
 else{
 write(fd, buf, size);
 }
 
 }
-
+//function that spawns threads
 void createThreads(char *argv[])
 {int prev =0;
  int n = 0;	
@@ -120,7 +141,7 @@ pthread_t * thread = malloc(sizeof(pthread_t)*10);
 tData.threadnum = i;
 prev = n;
 tData.low = prev;	
-printf("prev%d\n", prev);
+
 n = countLines( argv,(i*tData.splitSize) ,((i+1) *tData.splitSize));
 n = n+prev;
 tData.high = n;
@@ -138,30 +159,40 @@ tData.high = n;
 		}
 
 }
+//writes data from stream to file
 static size_t write_data(void *ptr, size_t size, size_t nmemb, void *(stream)){
 size_t written = fwrite(ptr, size, nmemb, (FILE *)stream);
 return written;
 }
 
+
 int main(int argc, char *argv[]){
 
 if(argc == 2){
-tData.splitSize = strtol("500",NULL,0);
-printf("argc = %d\n", argc);
+	tData.splitSize = strtol("500",NULL,0);
+	printf("argc = %d\n", argc);
 
 }
 if (argc <= 4){
-tData.filename = argv[1];
+	tData.filename = argv[1];
 }
 if (argc >= 3){
-tData.splitSize = strtol(argv[2], NULL, 0);
+	tData.splitSize = strtol(argv[2], NULL, 0);
 }
 
 
 if (argc > 3){
-if(strcmp(argv[3],"-o")== 0){
+	if(strcmp(argv[3],"-o")== 0){
+	tData.removeReturn = 1;
+}
 
-tData.removeReturn = 1;
+if(strcmp(argv[3],"-csv") == 0){
+tData.commaSplit = 1;
+}
+if(strcmp(argv[3],"-l") == 0){
+ countLines(argv,0,1);
+printf("the file has %d lines\n", lines);
+return lines;
 }
 if(strcmp(argv[3],"-c") == 0){
 CURL *curl_handle;
@@ -183,9 +214,7 @@ curl_easy_cleanup(curl_handle);
 }
 }
 
-
-countLines(argv ,0,1);
-
+	countLines(argv ,0,1);
 	createThreads( argv);
 	return 0;
 };

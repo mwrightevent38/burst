@@ -1,0 +1,25 @@
+./" This is the manpage of  burst"
+.TH burst 8 "5-11-2016" "V1.0" "burst ManPage"
+
+.SH NAME
+burst
+
+.SH DESCRIPTION
+Command line utility that will take in a file and split it into line segments.
+
+.SH Options
+.IP -o
+remove newline
+.IP -csv
+separates lines by , instead of newline
+.IP -c
+get html data from a website save into file and burst into smaller files
+.IP -l
+Returns the amount of lines in the file.
+.IP -w
+returns the amount of words in the file.
+
+.SH SYNOPSIS
+burst[file][size][commands][curlurl]
+.SH AUTHOR
+Mathew Wright 

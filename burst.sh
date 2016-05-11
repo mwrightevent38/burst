@@ -1,6 +1,6 @@
 export px4="%"
 
-this=$1;
+file="/home/mbw29/burst.sh"
 
 if ! [ "$1" == "" ]; then
 
@@ -14,3 +14,10 @@ split=500
 echo $split
 fi
 
+
+while [IFS= read -r line] && [count < split]
+do
+count + = 1;
+echo "$line"
+write file.txt $line;
+done <"$file"

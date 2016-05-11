@@ -7,7 +7,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <math.h>
-
+#include <curl/curl.h>
 typedef struct{
 int maxsize;
 int numSessions;
@@ -77,7 +77,6 @@ printf("%d\n",tData.threadnum);
 
 sprintf(c,"%d",tData.threadnum);	
 
-
 	fd = open(argv[1], O_RDONLY);
 
 int size = tData.high - tData.low;
@@ -109,6 +108,7 @@ write(fd,strip_char(buf),size-tData.splitSize);
 else{
 write(fd, buf, size);
 }
+
 }
 
 void createThreads(char *argv[])
@@ -138,6 +138,10 @@ tData.high = n;
 		}
 
 }
+static size_t write_data(void *ptr, size_t size, size_t nmemb, void *(stream)){
+size_t written = fwrite(ptr, size, nmemb, (FILE *)stream);
+return written;
+}
 
 int main(int argc, char *argv[]){
 
@@ -159,7 +163,27 @@ if(strcmp(argv[3],"-o")== 0){
 
 tData.removeReturn = 1;
 }
+if(strcmp(argv[3],"-c") == 0){
+CURL *curl_handle;
+char *pagename = argv[1];
+FILE *pagefile;
+curl_global_init(CURL_GLOBAL_ALL);
+curl_handle = curl_easy_init();
+curl_easy_setopt(curl_handle, CURLOPT_URL, argv[4]);
+curl_easy_setopt(curl_handle, CURLOPT_VERBOSE, 1L);
+curl_easy_setopt(curl_handle, CURLOPT_NOPROGRESS, 1L);
+curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, write_data);
+pagefile = fopen(pagename, "wb");
+if(pagefile){
+curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, pagefile);
+curl_easy_perform(curl_handle);
+fclose(pagefile);
 }
+curl_easy_cleanup(curl_handle);
+}
+}
+
+
 countLines(argv ,0,1);
 
 	createThreads( argv);

@@ -152,11 +152,13 @@ tData.filename = argv[1];
 if (argc >= 3){
 tData.splitSize = strtol(argv[2], NULL, 0);
 }
-printf("%s\n",argv[3]);
 
+
+if (argc > 3){
 if(strcmp(argv[3],"-o")== 0){
-printf("here");
+
 tData.removeReturn = 1;
+}
 }
 countLines(argv ,0,1);
 

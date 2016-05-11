@@ -12,6 +12,7 @@ typedef struct{
 int maxsize;
 int numSessions;
 int splitSize;
+int removeReturn;
 int threadnum;
 int low;
 int high;
@@ -21,6 +22,20 @@ int chars;
 int lines;
 threadData tData;
 
+char *strip_char(const char *s){
+	char *p = malloc(strlen(s) + 1);
+	if (p){
+	char *p2 = p;
+		while (*s !='\0'){
+			if(*s != '\t' && *s != '\n'){
+			*p2++ = *s++;
+			}
+			else{    s++;	}
+		}
+	*p2 = '\0';
+	}
+return p;
+}
 
 int countLines(char *argv[], int low, int high){
 	FILE *fp = fopen(argv[1],"r");
@@ -39,7 +54,7 @@ int countLines(char *argv[], int low, int high){
 		}
 		while( ch != EOF);
 
-printf("%d\n",chars);
+
 numberSessions(lines, tData.splitSize);
 return chars;
 
@@ -88,8 +103,12 @@ fd = open(c, O_CREAT | O_WRONLY, 0600);
 if (fd == -1){
 printf("failed");
 }
+if (tData.removeReturn == 1){
+write(fd,strip_char(buf),size-tData.splitSize);
+}
+else{
 write(fd, buf, size);
-
+}
 }
 
 void createThreads(char *argv[])
@@ -127,13 +146,17 @@ tData.splitSize = strtol("500",NULL,0);
 printf("argc = %d\n", argc);
 
 }
-if (argc <= 3){
+if (argc <= 4){
 tData.filename = argv[1];
 }
-if (argc == 3){
+if (argc >= 3){
 tData.splitSize = strtol(argv[2], NULL, 0);
-printf("equal 2");
+}
+printf("%s\n",argv[3]);
 
+if(strcmp(argv[3],"-o")== 0){
+printf("here");
+tData.removeReturn = 1;
 }
 countLines(argv ,0,1);
 

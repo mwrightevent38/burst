@@ -6,11 +6,13 @@
 #include <string.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <math.h>
 
 typedef struct{
 int maxsize;
 int numSessions;
 int splitSize;
+int threadnum;
 int low;
 int high;
 char filename;
@@ -28,44 +30,49 @@ int countLines(char *argv[], int low, int high){
 
 		do{
 		ch = fgetc(fp);
-		if(lines >= low && lines < high){
-		chars++;
-		}
 		if (ch== '\n'){
 		lines++;
 		}
-		if (lines > low && lines < high){
+		if (lines >= low && lines < high){
 		chars++;
 		}
 		}
 		while( ch != EOF);
 
-printf("this many %d\n",chars);
-
+printf("%d\n",chars);
+numberSessions(lines, tData.splitSize);
 return chars;
 
 }
 
 
-double numberSessions(int Lines, int split){
-tData.numSessions = (Lines/split);
+void numberSessions(int Lines, int split){
+int t = (int)((lines/split)+1);
+tData.numSessions = t;
+
 }
 
 
-void *burst(void *args){
+
+void *burst(void *argv[]){
 int fd;
-	int i = (int) args;
-	fd = open("this", O_RDONLY);
+char c[100];
+sprintf(c,argv[1]);
+printf("%d\n",tData.threadnum);	
+
+sprintf(c,"%d",tData.threadnum);	
+
+
+	fd = open(argv[1], O_RDONLY);
+
 int size = tData.high - tData.low;
  
-printf("%d\n",size);
+//printf("%d\n",size);
 
 char buf[size];
 
-//	pthread_id_np_t tid;
-//	tid = pthread_getthreadid_np();	
-	
-//	read(tid*i, i*tid+1)
+pread(fd, buf, size, tData.low);
+
 
 		if (fd == -1){
 		printf("problem");
@@ -74,9 +81,15 @@ char buf[size];
 
 
 //printf("this many %d\n", i);
-
-
 close(fd);
+
+
+fd = open(c, O_CREAT | O_WRONLY, 0600);
+if (fd == -1){
+printf("failed");
+}
+write(fd, buf, size);
+
 }
 
 void createThreads(char *argv[])
@@ -84,17 +97,18 @@ void createThreads(char *argv[])
  int n = 0;	
 pthread_t * thread = malloc(sizeof(pthread_t)*10);
 
-	for (int i = 0; i < 5; i++){
+	for (int i = 0; i < tData.numSessions; i++){
+tData.threadnum = i;
 prev = n;
 tData.low = prev;	
 printf("prev%d\n", prev);
 n = countLines( argv,(i*tData.splitSize) ,((i+1) *tData.splitSize));
 n = n+prev;
 tData.high = n;
-printf("n%d\n", tData.high);
 
 
-	int ret = pthread_create((&thread[i]), NULL, *burst, n); 
+
+	int ret = pthread_create((&thread[i]), NULL, *burst, argv); 
 		pthread_join(thread[i],NULL);
 
 			if(ret = 0){
@@ -107,19 +121,22 @@ printf("n%d\n", tData.high);
 }
 
 int main(int argc, char *argv[]){
-	int fd;
-	fd = open( argv[1], O_RDONLY);
 
-	if (fd == -1){
-	printf("Failed to open.\n");
+if(argc == 2){
+tData.splitSize = strtol("500",NULL,0);
+printf("argc = %d\n", argc);
+
 }
-
-printf("%s\n",argv[1]);
+if (argc <= 3){
+tData.filename = argv[1];
+}
+if (argc == 3){
 tData.splitSize = strtol(argv[2], NULL, 0);
-printf("%d\n",tData.splitSize);
+printf("equal 2");
 
-//printf("%d\n",countLines((argv[1]),2,0));
-	close(fd);
+}
+countLines(argv ,0,1);
+
 	createThreads( argv);
 	return 0;
 };
@@ -128,14 +145,3 @@ printf("%d\n",tData.splitSize);
 
 
 
-/*
-//function to add file number on end of split file
-char* addstr(const char* a, const char* b){
-size_t len = strlen(a) + strlen(b);
-char *ret = (char*)malloc(len * sizeof(char) +1;
-*ret = '\0';
-
-return strcat(strcat(ret,a), b);
-
-}
-*/
